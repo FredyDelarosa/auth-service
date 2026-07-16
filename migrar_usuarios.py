@@ -1,66 +1,68 @@
 import os
+import uuid
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 
 load_dotenv(dotenv_path="../.env")
 
-# URLs de conexión. 
-# La base de datos vieja (Core/Monolito)
-DB_URL_CORE = os.getenv("DATABASE_URL") 
-# La nueva base de datos exclusiva para Auth
+DB_URL_CORE = os.getenv("DATABASE_URL")
 DB_URL_AUTH = os.getenv("DB_URL_AUTH")
 
 def migrar_usuarios():
     print("Iniciando migración de usuarios...")
-    
     if not DB_URL_CORE or not DB_URL_AUTH:
-        print("Error: Asegúrate de tener DATABASE_URL y DB_URL_AUTH en tu .env global")
+        print("Error: Asegúrate de tener DATABASE_URL y DB_URL_AUTH.")
         return
 
     engine_core = create_engine(DB_URL_CORE)
     engine_auth = create_engine(DB_URL_AUTH)
 
     with engine_core.connect() as conn_core, engine_auth.connect() as conn_auth:
-        # 1. Extraer roles del sistema viejo
-        print("Migrando roles...")
-        roles = conn_core.execute(text("SELECT id_rol, nombre_rol FROM roles")).fetchall()
-        for rol in roles:
-            # Insertar ignorando duplicados (ON CONFLICT DO NOTHING funciona en Postgres)
-            conn_auth.execute(text("""
-                INSERT INTO roles (id_rol, nombre_rol) 
-                VALUES (:id_rol, :nombre_rol) 
-                ON CONFLICT (id_rol) DO NOTHING
-            """), {"id_rol": rol.id_rol, "nombre_rol": rol.nombre_rol})
+        # 1. Obtener todos los usuarios del sistema viejo (donde 'rol' es un string)
+        print("Extrayendo usuarios antiguos...")
+        usuarios = conn_core.execute(text("SELECT id_usuario, nombre, email, password_hash, rol, activo FROM usuarios")).fetchall()
         
-        # 2. Extraer usuarios del sistema viejo
-        print("Migrando usuarios...")
-        usuarios = conn_core.execute(text("SELECT id_usuario, nombre, email, password_hash, esta_activo FROM usuarios")).fetchall()
+        # 2. Crear los roles únicos en la nueva base de datos Auth
+        roles_unicos = set(u.rol for u in usuarios if u.rol)
+        role_map = {}
+        print(f"Roles encontrados para migrar: {roles_unicos}")
+        
+        for rol_nombre in roles_unicos:
+            # Buscar si el rol ya existe
+            rol_existente = conn_auth.execute(text("SELECT id_rol FROM roles WHERE nombre_rol = :nombre"), {"nombre": rol_nombre}).fetchone()
+            if rol_existente:
+                role_map[rol_nombre] = rol_existente.id_rol
+            else:
+                nuevo_id = str(uuid.uuid4())
+                conn_auth.execute(text("INSERT INTO roles (id_rol, nombre_rol) VALUES (:id, :nombre)"), {"id": nuevo_id, "nombre": rol_nombre})
+                role_map[rol_nombre] = nuevo_id
+                
+        # 3. Insertar usuarios y sus relaciones de rol en la nueva BD Auth
+        print("Migrando usuarios y mapeando roles...")
         for u in usuarios:
+            # Insertar en usuarios
             conn_auth.execute(text("""
                 INSERT INTO usuarios (id_usuario, nombre, email, password_hash, esta_activo)
-                VALUES (:id_usuario, :nombre, :email, :password_hash, :esta_activo)
+                VALUES (:id, :nom, :em, :pwd, :act)
                 ON CONFLICT (id_usuario) DO NOTHING
             """), {
-                "id_usuario": u.id_usuario,
-                "nombre": u.nombre,
-                "email": u.email,
-                "password_hash": u.password_hash,
-                "esta_activo": u.esta_activo
+                "id": u.id_usuario,
+                "nom": u.nombre,
+                "em": u.email,
+                "pwd": u.password_hash,
+                "act": u.activo
             })
             
-        # 3. Extraer relación usuario_rol
-        print("Migrando relaciones usuario_rol...")
-        user_roles = conn_core.execute(text("SELECT usuario_id, rol_id FROM usuario_rol")).fetchall()
-        for ur in user_roles:
-            try:
-                conn_auth.execute(text("""
-                    INSERT INTO usuario_rol (usuario_id, rol_id)
-                    VALUES (:usuario_id, :rol_id)
-                """), {"usuario_id": ur.usuario_id, "rol_id": ur.rol_id})
-            except Exception:
-                # Si ya existe, lo ignoramos
-                pass
-                
+            # Insertar en usuario_rol
+            if u.rol and u.rol in role_map:
+                try:
+                    conn_auth.execute(text("""
+                        INSERT INTO usuario_rol (usuario_id, rol_id)
+                        VALUES (:u_id, :r_id)
+                    """), {"u_id": u.id_usuario, "r_id": role_map[u.rol]})
+                except Exception:
+                    pass # Ya existe la relacion
+                    
         conn_auth.commit()
         print("¡Migración completada con éxito!")
 
