@@ -18,3 +18,11 @@ class UserRepository(ABC):
     @abstractmethod
     def get_all(self, rol: Optional[str] = None) -> list[Usuario]:
         pass
+
+    @abstractmethod
+    def update_role(self, id_usuario: str, rol: str) -> Optional[Usuario]:
+        pass
+
+    @abstractmethod
+    def delete(self, id_usuario: str) -> bool:
+        pass

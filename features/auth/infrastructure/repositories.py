@@ -57,3 +57,27 @@ class UserRepositoryImpl(UserRepository):
             query = query.join(UsuarioModel.roles).filter(RolModel.nombre_rol == rol)
         models = query.all()
         return [self._to_entity(m) for m in models]
+
+    def update_role(self, id_usuario: str, rol: str) -> Optional[Usuario]:
+        from .models import RolModel
+        model = self.db.query(UsuarioModel).filter(UsuarioModel.id_usuario == id_usuario).first()
+        if not model:
+            return None
+        
+        rol_db = self.db.query(RolModel).filter(RolModel.nombre_rol == rol).first()
+        if not rol_db:
+            rol_db = RolModel(nombre_rol=rol)
+            self.db.add(rol_db)
+            
+        model.roles = [rol_db] # Sobrescribe los roles anteriores con el nuevo
+        self.db.commit()
+        self.db.refresh(model)
+        return self._to_entity(model)
+
+    def delete(self, id_usuario: str) -> bool:
+        model = self.db.query(UsuarioModel).filter(UsuarioModel.id_usuario == id_usuario).first()
+        if not model:
+            return False
+        self.db.delete(model)
+        self.db.commit()
+        return True

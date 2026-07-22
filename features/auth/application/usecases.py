@@ -61,3 +61,20 @@ class AuthUseCases:
                 roles=[r.nombre_rol for r in u.roles]
             ) for u in users
         ]
+
+    def update_user_role(self, id_usuario: str, rol: str) -> UserResponse:
+        user = self.repo.update_role(id_usuario, rol)
+        if not user:
+            raise ValueError("Usuario no encontrado")
+        return UserResponse(
+            id_usuario=user.id_usuario,
+            nombre=user.nombre,
+            email=user.email,
+            roles=[r.nombre_rol for r in user.roles]
+        )
+
+    def delete_user(self, id_usuario: str):
+        exito = self.repo.delete(id_usuario)
+        if not exito:
+            raise ValueError("Usuario no encontrado")
+        return {"status": "success", "message": "Usuario eliminado correctamente"}

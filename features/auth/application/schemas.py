@@ -15,6 +15,9 @@ class RegisterRequest(BaseModel):
     password: str
     rol: str
 
+class UpdateRoleRequest(BaseModel):
+    rol: str
+
 class UserResponse(BaseModel):
     id_usuario: str
     nombre: str
