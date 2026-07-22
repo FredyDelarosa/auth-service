@@ -28,12 +28,23 @@ class UserRepositoryImpl(UserRepository):
         return self._to_entity(model) if model else None
 
     def create(self, usuario: Usuario) -> Usuario:
-        # En una implementación real, se manejan los roles adecuadamente.
+        from .models import RolModel
+        
         nuevo_modelo = UsuarioModel(
             nombre=usuario.nombre,
             email=usuario.email,
             password_hash=usuario.password_hash
         )
+        
+        # Asignar roles
+        if usuario.roles:
+            for rol in usuario.roles:
+                rol_db = self.db.query(RolModel).filter(RolModel.nombre_rol == rol.nombre_rol).first()
+                if not rol_db:
+                    rol_db = RolModel(nombre_rol=rol.nombre_rol)
+                    self.db.add(rol_db)
+                nuevo_modelo.roles.append(rol_db)
+                
         self.db.add(nuevo_modelo)
         self.db.commit()
         self.db.refresh(nuevo_modelo)

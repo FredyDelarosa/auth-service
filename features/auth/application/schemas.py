@@ -13,6 +13,7 @@ class RegisterRequest(BaseModel):
     nombre: str
     email: EmailStr
     password: str
+    rol: str
 
 class UserResponse(BaseModel):
     id_usuario: str

@@ -24,18 +24,20 @@ class AuthUseCases:
         if self.repo.get_by_email(req.email):
             raise ValueError("El email ya está registrado")
             
+        from features.auth.domain.entities import Rol
         nuevo_usuario = Usuario(
             id_usuario=str(uuid.uuid4()),
             nombre=req.nombre,
             email=req.email,
             password_hash=get_password_hash(req.password),
+            roles=[Rol(id_rol="", nombre_rol=req.rol)]
         )
         user_db = self.repo.create(nuevo_usuario)
         return UserResponse(
             id_usuario=user_db.id_usuario,
             nombre=user_db.nombre,
             email=user_db.email,
-            roles=[]
+            roles=[r.nombre_rol for r in user_db.roles]
         )
 
     def get_user_info(self, id_usuario: str) -> UserResponse:
