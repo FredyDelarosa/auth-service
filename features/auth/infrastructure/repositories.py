@@ -49,3 +49,11 @@ class UserRepositoryImpl(UserRepository):
         self.db.commit()
         self.db.refresh(nuevo_modelo)
         return self._to_entity(nuevo_modelo)
+
+    def get_all(self, rol: Optional[str] = None) -> list[Usuario]:
+        query = self.db.query(UsuarioModel)
+        if rol:
+            from .models import RolModel
+            query = query.join(UsuarioModel.roles).filter(RolModel.nombre_rol == rol)
+        models = query.all()
+        return [self._to_entity(m) for m in models]

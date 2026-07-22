@@ -38,3 +38,13 @@ def get_internal_user_info(
         return uc.get_user_info(id_usuario)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+@router.get("/internal/users", response_model=list[UserResponse], tags=["Internal"])
+def get_all_users(
+    rol: str = None,
+    x_api_key: str = Header(...),
+    uc: AuthUseCases = Depends(get_auth_usecases)
+):
+    if x_api_key != settings.API_KEY:
+        raise HTTPException(status_code=403, detail="Invalid API Key")
+    return uc.get_all_users(rol)

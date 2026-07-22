@@ -50,3 +50,14 @@ class AuthUseCases:
             email=user.email,
             roles=[r.nombre_rol for r in user.roles]
         )
+
+    def get_all_users(self, rol: str = None) -> list[UserResponse]:
+        users = self.repo.get_all(rol)
+        return [
+            UserResponse(
+                id_usuario=u.id_usuario,
+                nombre=u.nombre,
+                email=u.email,
+                roles=[r.nombre_rol for r in u.roles]
+            ) for u in users
+        ]

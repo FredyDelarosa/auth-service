@@ -14,3 +14,7 @@ class UserRepository(ABC):
     @abstractmethod
     def create(self, usuario: Usuario) -> Usuario:
         pass
+
+    @abstractmethod
+    def get_all(self, rol: Optional[str] = None) -> list[Usuario]:
+        pass
