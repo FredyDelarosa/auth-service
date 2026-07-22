@@ -26,7 +26,7 @@ def register(req: RegisterRequest, uc: AuthUseCases = Depends(get_auth_usecases)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.get("/internal/users/{id_usuario}", response_model=UserResponse, tags=["Internal"])
+@router.get("/auth/internal/users/{id_usuario}", response_model=UserResponse, tags=["Internal"])
 def get_internal_user_info(
     id_usuario: str, 
     x_api_key: str = Header(default=settings.API_KEY),
@@ -39,7 +39,7 @@ def get_internal_user_info(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
-@router.get("/internal/users", response_model=list[UserResponse], tags=["Internal"])
+@router.get("/auth/internal/users", response_model=list[UserResponse], tags=["Internal"])
 def get_all_users(
     rol: str = None,
     x_api_key: str = Header(default=settings.API_KEY),
