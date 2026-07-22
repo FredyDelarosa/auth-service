@@ -8,6 +8,7 @@ class LoginRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    rol: str
 
 class RegisterRequest(BaseModel):
     nombre: str

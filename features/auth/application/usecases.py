@@ -18,7 +18,8 @@ class AuthUseCases:
 
         roles_list = [r.nombre_rol for r in user.roles]
         token = create_access_token(data={"sub": user.id_usuario, "roles": roles_list})
-        return TokenResponse(access_token=token)
+        rol_principal = roles_list[0] if roles_list else "Usuario"
+        return TokenResponse(access_token=token, rol=rol_principal)
 
     def register(self, req: RegisterRequest) -> UserResponse:
         if self.repo.get_by_email(req.email):
