@@ -29,7 +29,7 @@ def register(req: RegisterRequest, uc: AuthUseCases = Depends(get_auth_usecases)
 @router.get("/internal/users/{id_usuario}", response_model=UserResponse, tags=["Internal"])
 def get_internal_user_info(
     id_usuario: str, 
-    x_api_key: str = Header(...),
+    x_api_key: str = Header(default=settings.API_KEY),
     uc: AuthUseCases = Depends(get_auth_usecases)
 ):
     if x_api_key != settings.API_KEY:
@@ -42,7 +42,7 @@ def get_internal_user_info(
 @router.get("/internal/users", response_model=list[UserResponse], tags=["Internal"])
 def get_all_users(
     rol: str = None,
-    x_api_key: str = Header(...),
+    x_api_key: str = Header(default=settings.API_KEY),
     uc: AuthUseCases = Depends(get_auth_usecases)
 ):
     if x_api_key != settings.API_KEY:
